@@ -10,6 +10,8 @@ from tkinter import messagebox
 
 
 def main():
+    candy_machine = Candy_Machine()
+    candy_machine.program()
 
     """ Optional - uncomment then edit default values in registers and dispensers """
     # candy_machine.cash_register.cash_register(cash_in=10_000)
@@ -18,8 +20,8 @@ def main():
     # candy_machine.gum_dispenser.dispenser(set_cost=25, set_no_of_items=20)
     # candy_machine.cookie_dispenser.dispenser(set_cost=25, set_no_of_items=20)
 
-    app = App()
-    app.mainloop()
+
+    
 
 
 
@@ -29,6 +31,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         
+        print(self.)
         self.candy_machine = Candy_Machine()
         self.candy_machine.chip_dispenser.dispenser(set_cost=5, set_no_of_items=1)
         print(self.candy_machine.chip_dispenser)
@@ -192,7 +195,7 @@ class Candy_Machine:
         self.chip_dispenser = Dispenser()
         self.gum_dispenser = Dispenser()
         self.cookie_dispenser = Dispenser()
-
+        
         self.deposit = 0
 
         # Key mapping in selection menu
@@ -238,9 +241,10 @@ class Candy_Machine:
         else:
             self._admin_choice = self.admin_key[admin_choice]
 
-    def program():
-        """ Start the program"""
-        
+    def program(self):
+        self.app = App()
+        self.app.mainloop()
+
     def sell_product(self, new_deposit):
         """ Sell the item selected by the customer """
         # Ensure that the chosen item is not out of stock
@@ -279,12 +283,12 @@ class Candy_Machine:
         else:
             messagebox.showinfo("Successful", f"Successfully purchased a {self.item}!\nHere is you {self.item}! Enjoy!")
         self.deposit = 0
-        return True
+        self.show_selection()
 
 
     def show_selection(self):
         """ displays the main menu, allow users to select an item to buy """
-
+        self.show_frame(Selection_Menu)
 
     def show_admin_menu(self):
         """ Allows owner to view and set balance in register, and set price and number of items """
