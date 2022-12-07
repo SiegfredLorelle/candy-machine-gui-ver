@@ -25,8 +25,6 @@ class App(tk.Tk):
         # print(self.candy_machine.chip_dispenser)
         self.candy_machine.item = "candy"
 
-
-
         self.title('My Candy Machine')
         self.geometry('1080x720')
         self.resizable(False, False)
@@ -47,7 +45,7 @@ class App(tk.Tk):
         self.show_frame(Selection_Menu)
 
     def build_frames(self):
-        for F in {Selection_Menu, Admin_Menu, Buy_Page}:
+        for F in {Selection_Menu, Admin_Menu, Buy_Page, Edit_Balance, Edit_Item}:
             frame = F(self, self.container)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
@@ -62,14 +60,15 @@ class App(tk.Tk):
                 self.candy_machine.item = item
                 if self.candy_machine.item_key[self.candy_machine.item].get_count() <= 0:
                     return messagebox.showerror("Error", f"Sorry {self.candy_machine.item} is out of stock.")
-
                 self.build_frames()
+                self.frames[Buy_Page].buy_entry.focus_set()
                 self.show_frame(Buy_Page)
 
-        if coming_from == "buy":
+
+        elif coming_from == "buy":
             if doing == "buy":
-                is_successful = self.candy_machine.sell_product(self.frames[Buy_Page].entry.get())
-                self.frames[Buy_Page].entry.delete(0, tk.END)
+                is_successful = self.candy_machine.sell_product(self.frames[Buy_Page].buy_entry.get())
+                self.frames[Buy_Page].buy_entry.delete(0, tk.END)
 
                 if is_successful:
                     self.show_frame(Selection_Menu)
@@ -82,6 +81,22 @@ class App(tk.Tk):
                         self.show_frame(Selection_Menu)
                 else:
                     self.show_frame(Selection_Menu)
+
+        elif coming_from == "admin":
+            if item == "balance":
+                self.show_frame(Edit_Balance)
+            else:
+                self.candy_machine.item = item
+                self.build_frames()
+
+                self.show_frame(Edit_Item)
+
+        elif coming_from == "edit_balance":
+            self.show_frame(Admin_Menu)
+
+                
+                
+        
 
 
         
@@ -143,19 +158,19 @@ class Admin_Menu(tk.Frame):
         intstructions = tk.Label(self, text="Press item to manage!", font="Times 18 bold", fg="white", bg="#CE7777")
         intstructions.grid(row=1, column=0, sticky="nesw")
 
-        admin = tk.Button(self, text="Balance", font="Times 15", bg="#E8C4C4", command=lambda: parent.show_frame(parent.Admin_Menu))
+        admin = tk.Button(self, text="Balance", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="balance"))
         admin.grid(row=2, column=0, sticky="nesw")
 
-        candy = tk.Button(self, text="Candy", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="candy"))
+        candy = tk.Button(self, text="Candy", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="candy"))
         candy.grid(row=3, column=0, sticky="nesw")
 
-        chip = tk.Button(self, text="Chip", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="chip"))
+        chip = tk.Button(self, text="Chip", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="chip"))
         chip.grid(row=4, column=0, sticky="nesw")
 
-        gum = tk.Button(self, text="Gum", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="gum"))
+        gum = tk.Button(self, text="Gum", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="gum"))
         gum.grid(row=5, column=0, sticky="nesw")
 
-        cookie = tk.Button(self, text="Cookie", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="cookie"))
+        cookie = tk.Button(self, text="Cookie", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="cookie"))
         cookie.grid(row=6, column=0, sticky="nesw")
 
         exit = tk.Button(self, text="Back", font="Times 15", bg="#F2E5E5", command=lambda: parent.show_frame(parent.Selection_Menu))
@@ -164,23 +179,22 @@ class Admin_Menu(tk.Frame):
 
 class Buy_Page(tk.Frame):
     def __init__(self, parent, container):
-        super().__init__(container, bg="#FFCAC8")
+        super().__init__(container, bg="#FFD1D1")
 
         for number in range(8):
             self.grid_rowconfigure(number, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
 
         title = tk.Label(self, text="My Candy Machine", font="Helvetica 25 bold", fg="black", bg="#C0EEE4")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
 
 
-        instructions = tk.Label(self, text=f"Insert ${parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost():,} to buy a {parent.candy_machine.item}:", font="Helvetica 18 bold", fg="black", bg="#FFCAC8")
+        instructions = tk.Label(self, text=f"Insert ${parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost():,} to buy a {parent.candy_machine.item}:", font="Helvetica 18 bold", fg="black", bg="#FFD1D1")
         instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
 
-        self.entry = tk.Entry(self, font="Helvetica 25", justify="center")
-        self.entry.grid(row=2, column=0, columnspan=2)
-        self.entry.focus_set()
+        self.buy_entry = tk.Entry(self, font="Helvetica 25", justify="center")
+        self.buy_entry.grid(row=2, column=0, columnspan=2)
+        self.buy_entry.focus_get()
 
         back = tk.Button(self, text="Back", font="Helvetica 15", bg="#FFD1D1", command=lambda: parent.controller("buy", "back"))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
@@ -192,6 +206,54 @@ class Buy_Page(tk.Frame):
 
 
 
+
+class Edit_Balance(tk.Frame):
+    def __init__(self, parent, container):
+        super().__init__(container, bg="#CE7777")
+
+        for number in range(8):
+            self.grid_rowconfigure(number, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        title = tk.Label(self, text="Admin Menu", font="Times 25 bold", fg="white", bg="#2B3A55")
+        title.grid(row=0, column=0, columnspan=2, sticky="nesw")
+
+        instructions = tk.Label(self, text=f"Save the changes to edit the values of {parent.candy_machine.item}.", font="Times 18 bold", fg="white", bg="#CE7777")
+        instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
+
+        self.entry = tk.Entry(self, font="Times 25", justify="center")
+        self.entry.grid(row=2, column=0, columnspan=2)
+
+
+        save = tk.Button(self, text="Save", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_balance", "back"))
+        save.grid(row=3, column=0, columnspan=2, ipadx=15)
+
+        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.controller("edit_balance", "back"))
+        back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
+
+class Edit_Item(tk.Frame):
+    def __init__(self, parent, container):
+        super().__init__(container, bg="#CE7777")
+
+        for number in range(8):
+            self.grid_rowconfigure(number, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        title = tk.Label(self, text="Admin Menu", font="Times 25 bold", fg="white", bg="#2B3A55")
+        title.grid(row=0, column=0, columnspan=2, sticky="nesw")
+
+        instructions = tk.Label(self, text=f"Save the changes to edit the values of {parent.candy_machine.item}.", font="Times 18 bold", fg="white", bg="#CE7777")
+        instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
+
+        self.entry = tk.Entry(self, font="Times 25", justify="center")
+        self.entry.grid(row=2, column=0, columnspan=2)
+
+
+        save = tk.Button(self, text="Save", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_balance", "back"))
+        save.grid(row=3, column=0, columnspan=2, ipadx=15)
+
+        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.controller("edit_balance", "back"))
+        back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
 
 
@@ -237,9 +299,8 @@ class Candy_Machine():
         self.item_key = {"candy": self.candy_dispenser,
                          "chip": self.chip_dispenser,
                          "gum": self.gum_dispenser,
-                         "cookie": self.cookie_dispenser,
-                         "A": "admin"}
-
+                         "cookie": self.cookie_dispenser}
+        
         # Key mapping in admin menu
         self.admin_key = {"1": {"item": "candy", "dispenser": self.candy_dispenser},
                           "2": {"item": "chip", "dispenser": self.chip_dispenser},
@@ -299,7 +360,6 @@ class Candy_Machine():
     def sell_product(self, new_deposit):
         """ Sell the item selected by the customer, return true if purchase is successful """
         # Ensure that the chosen item is not out of stock
-        
         if self.item_key[self.item].get_count() <= 0:
             messagebox.showerror("Error", f"Sorry {self.item} is out of stock.")
             return False
