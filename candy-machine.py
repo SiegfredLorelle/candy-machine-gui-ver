@@ -8,12 +8,8 @@ from tkinter import messagebox
 
 
 def main():
-
     app = App()
     app.mainloop()
-
-
-
 
 
 class App(tk.Tk):
@@ -24,328 +20,402 @@ class App(tk.Tk):
         # Create a candy machine
         self.candy_machine = Candy_Machine()
 
+        # Set up initial settings
         self.title('My Candy Machine')
         self.geometry('1080x720')
         self.resizable(False, False)
+
+        # Reprompt closing when closing via close button at the top right top
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+        # Create a container (to be used by each frames)
         self.container = tk.Frame(self, bg="#FFCAC8")
         self.container.pack(side="top", fill="both", expand=True)
         self.container.grid_rowconfigure(0, weight=1)
         self.container.grid_columnconfigure(0, weight=1)
 
+        # Create Frames
         self.frames = {}
         self.Selection_Menu = Selection_Menu
         self.Admin_Menu = Admin_Menu
         self.Buy_Page = Buy_Page
+        self.Edit_Balance = Edit_Balance
+        self.Edit_Item = Edit_Item
 
+        # Build each frames
         self.build_frames()
         
+        # Show selection menu
         self.show_frame(Selection_Menu)
 
     def build_frames(self):
+        """ Build each frame """
         for F in {Selection_Menu, Admin_Menu, Buy_Page, Edit_Balance, Edit_Item}:
+            # Build each frame, inheriting app and container
             frame = F(self, self.container)
+            # Put each frame in a frame list
             self.frames[F] = frame
+            # Show the frame and place them on top of each other
             frame.grid(row=0, column=0, sticky="nsew")
 
     def show_frame(self, cont):
+        """ Show the frame """
         frame = self.frames[cont]
         frame.tkraise()
+
+    def on_closing(self):
+        """ Reprompt when closing """
+        if messagebox.askyesno(title="Exit?", message="Do you really want to close 'My Candy Machine'?"):
+            self.destroy()
     
     def controller(self, coming_from, doing=None, item=None):
+        """ Control the app """
+        # Determine what to do based on where the controller is called
+        # If called from selection menu
         if coming_from == "selection":
+            # If an item is passed, set the current item to that
             if item:
                 self.candy_machine.item = item
+
+                # Do not redirect buy page if there is no more stocks left
                 if self.candy_machine.item_key[self.candy_machine.item].get_count() <= 0:
                     return messagebox.showerror("Error", f"Sorry, {self.candy_machine.item} is out of stock.")
+
+                # Rebuild the frames to update them
                 self.build_frames()
+
+                # Focus on the entry box then redirect to buy page
                 self.frames[Buy_Page].buy_entry.focus_set()
                 self.show_frame(Buy_Page)
 
-
+        # If called from buy page
         elif coming_from == "buy":
+            # If pressed deposit button (aka buy)
             if doing == "buy":
+                # Sell the product and determine if it was successful
                 is_successful = self.candy_machine.sell_product(self.frames[Buy_Page].buy_entry.get())
+
+                # Clear the entry box
                 self.frames[Buy_Page].buy_entry.delete(0, tk.END)
 
+                # If transaction is successful (deposit is enough to buy the item)
                 if is_successful:
+                    # Rebuild frames to update the available stocks and cash in the candy machine
                     self.build_frames()
+                    # Redirect to selection menu
                     self.show_frame(Selection_Menu)
 
+            # If pressed back button
             elif doing == "back":
+                # IF there is a deposit, return it to the customer
                 if self.candy_machine.deposit != 0:
+                    # Aks the customer if sure to cancel the transaction
                     if messagebox.askokcancel(title="Cancel?", message=f"Are you sure you want to cancel the purchase of {self.candy_machine.item}?"):
                         messagebox.showinfo(title="Return", message=f"Here is the ${self.candy_machine.deposit:,.2f} you deposited.")
+                        
+                        # Reset the deposit, then redirect to selection menu
                         self.candy_machine.deposit = 0
                         self.show_frame(Selection_Menu)
+                
+                # If there is no deposit, just go back to selection menu
                 else:
                     self.show_frame(Selection_Menu)
 
+        # If called from admin
         elif coming_from == "admin":
+            # If an item is selected update the current item
+            if not item or item != "balance":
+                self.candy_machine.item = item
+            
+            # Rebuild the page to update it
             self.build_frames()
 
+            # If balance is selected, then focus to entry box, and redirect to edit balance page
             if item == "balance":
                 self.frames[Edit_Balance].balance_entry.focus_set()
                 self.show_frame(Edit_Balance)
 
+            # If item is selected, then focust to entry_box, and redirect to edit item page
             else:
-                self.candy_machine.item = item
                 self.frames[Edit_Item].price_entry.focus_set()
                 self.show_frame(Edit_Item)
 
-
+        # If called from edit balance
         elif coming_from == "edit_balance":
+            # If save changes button is pressed
             if doing == "save":
+                # Ensure entered balance is valid
                 try:
+                    # Get the entered balance from edit balance page
                     entered_balance = int(self.frames[Edit_Balance].balance_entry.get())
 
+                # Infrom them about the error
                 except (TypeError, ValueError):
                     messagebox.showerror("Error", "Balance in the candy machine must be a positive integer.")
+                    # Rebuild the frames then redirect to edit balance page
                     self.build_frames()
                     self.show_frame(Edit_Balance)
                     return
+
+                # Inform them if no changes occured
                 if self.candy_machine.cash_register.current_balance() == entered_balance:
                     messagebox.showerror("Error", "Balance in the candy machine remains the same.")
 
+                # If entered balance is negative, set to the default (set up in cash setter in register class)
                 elif entered_balance < 0:
                     messagebox.showinfo("Warning", "Balance in the machine were set to default due to invalid input.")
 
+                # If valid, update the cash on hand in register
                 else:
                     self.candy_machine.cash_register.cash_register(entered_balance)
                     messagebox.showinfo("success", f"There are ${self.candy_machine.cash_register.current_balance():,.2f} in the candy machine.")
 
+                # Rebuild the frames, and stay on edit balance page
                 self.build_frames()
                 self.show_frame(Edit_Balance)
 
+        # If called from edit item
         elif coming_from == "edit_item":
+            # If save changes button is pressed
             if doing == "save":
+                # Get the current dispenser based on the current item
                 current_dispenser = self.candy_machine.item_key[self.candy_machine.item]
 
+                # Ensure entered price and number of stock is valid
                 try:
-                    entered_stocks = int(self.frames[Edit_Item].stocks_entry.get())
                     entered_price = int(self.frames[Edit_Item].price_entry.get())
+                    entered_stocks = int(self.frames[Edit_Item].stocks_entry.get())
 
+                # Inform them about the error
                 except (TypeError, ValueError):
                     messagebox.showerror("Error", "Price and number of stocks must be a positive integer.")
+                    # Rebuild the frames then redirect to edit balance page
                     self.build_frames()
                     self.show_frame(Edit_Item)
                     return
 
+                # Inform them if no changes occured
                 if current_dispenser.get_count() == entered_stocks and current_dispenser.get_product_cost() == entered_price:
                     messagebox.showerror("Error", "Price and number of stocks remains the same.")
+
+                # If entered price is negative or entered stocks is non positive then set to default (set up in price and stocks setter in dispenser class)
                 elif entered_price <= 0 or entered_stocks < 0:
                     messagebox.showinfo("Warning", "Values were set to default due to invalid values.")
+
+                # If valid, update the price and number of available stocks of the item
                 else:
                     current_dispenser.dispenser(entered_price, entered_stocks)
                     messagebox.showinfo("Success", "Changes were saved.\n")
 
+                # Rebuild the frames and stay on edit item page
                 self.build_frames()
                 self.show_frame(Edit_Item)
 
 
 
-
-
-
-
-
-    # Reprompt when closing
-    def on_closing(self):
-        if messagebox.askyesno(title="Exit?", message="Do you really want to close 'My Candy Machine'?"):
-            self.destroy()
-
-
-
-
-
 class Selection_Menu(tk.Frame):
+    """ Starting page, select a product to buy or access admin menu """
     def __init__(self, parent, container):
         super().__init__(container, bg="#FFD1D1")
 
+        # Set up the grid of the page
         for number in range(7):
             self.grid_rowconfigure(number, weight=1)
         for number in range(2):
             self.grid_columnconfigure(number, weight=1)
 
+        # Title
         title = tk.Label(self, text="My Candy Machine", font="Helvetica 25 bold", bg="#C0EEE4")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
 
+        # Instruction
         intstructions = tk.Label(self, text="Press an item to purchase!", font="Helvetica 18 bold", fg="black", bg="#FFD1D1")
         intstructions.grid(row=1, column=0, columnspan=2, sticky="nesw")
 
+        # Candy button
         candy = tk.Button(self, text="Candy", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="candy"))
         candy.grid(row=2, column=0, columnspan=2, sticky="nesw")
 
+        # Chip button
         chip = tk.Button(self, text="Chip", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="chip"))
         chip.grid(row=3, column=0, columnspan=2, sticky="nesw")
 
+        # Gum button
         gum = tk.Button(self, text="Gum", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="gum"))
         gum.grid(row=4, column=0, columnspan=2, sticky="nesw")
 
+        # Cookie button
         cookie = tk.Button(self, text="Cookie", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="cookie"))
         cookie.grid(row=5, column=0, columnspan=2, sticky="nesw")
 
+        # Exit button
         exit = tk.Button(self, text="Exit", font="Helvetica 15", bg="#F2E5E5", command=parent.on_closing)
         exit.grid(row=6, column=0, sticky="nesw")
 
+        # Admin button
         admin = tk.Button(self, text="Admin", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.show_frame(parent.Admin_Menu))
         admin.grid(row=6, column=1, sticky="nesw")
 
 
 class Admin_Menu(tk.Frame):
+    """ Allow admin to manage the cost, stocks of an item, and cash on the register """
     def __init__(self, parent, container):
         super().__init__(container, bg="#CE7777")
 
+        # Set up the grid of the page
         for number in range(8):
             self.grid_rowconfigure(number, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        # Title
         title = tk.Label(self, text="Admin Menu", font="Times 25 bold", fg="white", bg="#2B3A55")
         title.grid(row=0, column=0, sticky="nesw")
 
+        # Instruction
         intstructions = tk.Label(self, text="Press item to manage!", font="Times 18 bold", fg="white", bg="#CE7777")
         intstructions.grid(row=1, column=0, sticky="nesw")
 
-        admin = tk.Button(self, text="Balance", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="balance"))
-        admin.grid(row=2, column=0, sticky="nesw")
+        # Balance button
+        balance = tk.Button(self, text="Balance", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="balance"))
+        balance.grid(row=2, column=0, sticky="nesw")
 
+        # Candy button
         candy = tk.Button(self, text="Candy", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="candy"))
         candy.grid(row=3, column=0, sticky="nesw")
 
+        # Chip button
         chip = tk.Button(self, text="Chip", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="chip"))
         chip.grid(row=4, column=0, sticky="nesw")
 
+        # Gum button
         gum = tk.Button(self, text="Gum", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="gum"))
         gum.grid(row=5, column=0, sticky="nesw")
 
+        # Cookie button
         cookie = tk.Button(self, text="Cookie", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("admin", item="cookie"))
         cookie.grid(row=6, column=0, sticky="nesw")
 
-        exit = tk.Button(self, text="Back", font="Times 15", bg="#F2E5E5", command=lambda: parent.show_frame(parent.Selection_Menu))
-        exit.grid(row=7, column=0, sticky="nesw", ipadx=15)
+        # Exit button
+        back = tk.Button(self, text="Back", font="Times 15", bg="#F2E5E5", command=lambda: parent.show_frame(parent.Selection_Menu))
+        back.grid(row=7, column=0, sticky="nesw", ipadx=15)
 
 
 class Buy_Page(tk.Frame):
+    """ Prompts for a deposit to buy the item """
     def __init__(self, parent, container):
         super().__init__(container, bg="#FFD1D1")
 
+        # Set up the grid of the page
         for number in range(8):
             self.grid_rowconfigure(number, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        # Title
         title = tk.Label(self, text="My Candy Machine", font="Helvetica 25 bold", fg="black", bg="#C0EEE4")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
-
-
-        instructions = tk.Label(self, text=f"Insert ${parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost():,} to buy a {parent.candy_machine.item}:", font="Helvetica 18 bold", fg="black", bg="#FFD1D1")
+        
+        # Instruction
+        instructions = tk.Label(self, text=f"Deposit ${parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost():,} to buy a {parent.candy_machine.item}:", font="Helvetica 18 bold", fg="black", bg="#FFD1D1")
         instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
 
+        # Deposit entry box
         self.buy_entry = tk.Entry(self, font="Helvetica 25", justify="center")
         self.buy_entry.grid(row=2, column=0, columnspan=2)
         self.buy_entry.focus_get()
 
+        # Depsit button
+        deposit = tk.Button(self, text="Deposit", font="Helvetica 15", bg="#C0EEE4", command=lambda: parent.controller("buy", "buy"))
+        deposit.grid(row=3, column=0, columnspan=2, ipadx=15)
+
+        # Back/Cancel button
         back = tk.Button(self, text="Back", font="Helvetica 15", bg="#FFD1D1", command=lambda: parent.controller("buy", "back"))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
-        deposit = tk.Button(self, text="Insert", font="Helvetica 15", bg="#C0EEE4", command=lambda: parent.controller("buy", "buy"))
-        deposit.grid(row=3, column=0, columnspan=2, ipadx=15)
-
-
-
-
-
 
 class Edit_Balance(tk.Frame):
+    """ Change the cash on register of the candy machine """
     def __init__(self, parent, container):
         super().__init__(container, bg="#CE7777")
 
+        # Set up the grid of the page
         for number in range(8):
             self.grid_rowconfigure(number, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        # Title
         title = tk.Label(self, text="Admin Menu", font="Times 25 bold", fg="white", bg="#2B3A55")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
 
+        # Instruction
         instructions = tk.Label(self, text=f"Save changes to set a new balance in the candy machine.", font="Times 18 bold", fg="white", bg="#CE7777")
         instructions.grid(row=2, column=0, columnspan=2,sticky="nesw")
 
-        price = tk.Label(self, text="Amount of cash in the candy machine:", font="Times 18 bold", fg="white", bg="#CE7777")
-        price.grid(row=3, column=0, columnspan=2 ,sticky="esw")
+        # Balance label
+        balance = tk.Label(self, text="Amount of cash in the candy machine:", font="Times 18 bold", fg="white", bg="#CE7777")
+        balance.grid(row=3, column=0, columnspan=2 ,sticky="esw")
 
+        # Balance entry box
         self.balance_entry = tk.Entry(self, font="Times 25", justify="center")
-        # print(parent.candy_machine.cash_register.current_balance())
         self.balance_entry.insert(0, parent.candy_machine.cash_register.current_balance())
         self.balance_entry.grid(row=4, column=0, columnspan=2)
 
+        # Save button
         save = tk.Button(self, text="Save Changes", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_balance", "save"))
         save.grid(row=5, column=0, columnspan=2, ipadx=15)
 
+        # Back button
         back = tk.Button(self, text="Back", font="Times 15", fg="white", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
 
 class Edit_Item(tk.Frame):
+    """ Update the price and availabe stock in the dispenser of the candy machine """
     def __init__(self, parent, container):
         super().__init__(container, bg="#CE7777")
 
+        # Set up the grid system of the page
         for number in range(8):
             self.grid_rowconfigure(number, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        # Title
         title = tk.Label(self, text="Admin Menu", font="Times 25 bold", fg="white", bg="#2B3A55")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
 
+        # Instruction
         instructions = tk.Label(self, text=f"Save the changes to edit the values of {parent.candy_machine.item}.", font="Times 18 bold", fg="white", bg="#CE7777")
         instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
 
+        # Price label
         price = tk.Label(self, text=f"Price of a {parent.candy_machine.item}:", font="Times 18 bold", fg="white", bg="#CE7777")
         price.grid(row=2, column=0, columnspan=2 ,sticky="esw")
 
+        # Price entry box
         self.price_entry = tk.Entry(self, font="Times 25", justify="center")
         self.price_entry.insert(0, parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost())
         self.price_entry.grid(row=3, column=0, columnspan=2)
 
+        # Stock label
         stocks = tk.Label(self, text=f"Number of available {parent.candy_machine.item}:", font="Times 18 bold", fg="white", bg="#CE7777")
         stocks.grid(row=4, column=0, columnspan=2 ,sticky="esw")
 
+        # Stock entry box
         self.stocks_entry = tk.Entry(self, font="Times 25", justify="center")
         self.stocks_entry.insert(0, parent.candy_machine.item_key[parent.candy_machine.item].get_count())
         self.stocks_entry.grid(row=5, column=0, columnspan=2)
 
+        # Save button
         save = tk.Button(self, text="Save Changes", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_item", "save"))
         save.grid(row=6, column=0, columnspan=2, ipadx=15)
 
+        # Back button
         back = tk.Button(self, text="Back", font="Times 15", fg="white", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class Candy_Machine():
-
+    """ Created in the app """
     def __init__(self):
         """ Initalize the components of candy machine """
         self.cash_register = self.Cash_Register()
@@ -424,7 +494,7 @@ class Candy_Machine():
         # Inform the user about the successful transcation
         # If there is change, return it
         if  self.deposit != self.item_key[self.item].get_product_cost():
-            messagebox.showinfo("Success", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!\n\nHere also is your change of ${self.deposit - self.item_key[self.item].get_product_cost():,.2f}")
+            messagebox.showinfo("Success", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!\n\nHere also is your change of ${self.deposit - self.item_key[self.item].get_product_cost():,.2f}.")
         else:
             messagebox.showinfo("Success", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!")
         
