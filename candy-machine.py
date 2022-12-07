@@ -3,6 +3,7 @@ from tkinter import messagebox
 
 
 def main():
+    # Launch the app
     app = App()
     app.mainloop()
 
