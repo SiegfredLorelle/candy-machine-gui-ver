@@ -1,5 +1,5 @@
 # TODO
-# admin
+# balance
 # comments
 # clean up code
 
@@ -59,7 +59,7 @@ class App(tk.Tk):
             if item:
                 self.candy_machine.item = item
                 if self.candy_machine.item_key[self.candy_machine.item].get_count() <= 0:
-                    return messagebox.showerror("Error", f"Sorry {self.candy_machine.item} is out of stock.")
+                    return messagebox.showerror("Error", f"Sorry, {self.candy_machine.item} is out of stock.")
                 self.build_frames()
                 self.frames[Buy_Page].buy_entry.focus_set()
                 self.show_frame(Buy_Page)
@@ -93,6 +93,40 @@ class App(tk.Tk):
 
         elif coming_from == "edit_balance":
             self.show_frame(Admin_Menu)
+
+        elif coming_from == "edit_item":
+            if doing == "back":
+                self.show_frame(Admin_Menu)
+            
+            elif doing == "save":
+                current_dispenser = self.candy_machine.item_key[self.candy_machine.item]
+
+                try:
+                    entered_stocks = int(self.frames[Edit_Item].stocks_entry.get())
+                    entered_price = int(self.frames[Edit_Item].price_entry.get())
+
+                except (TypeError, ValueError):
+                    return messagebox.showerror("Error", "Price and number of stocks must be a positive integer.")
+
+                if current_dispenser.get_count() == entered_stocks and current_dispenser.get_product_cost() == entered_price:
+                    messagebox.showerror("Error", "Price and number of stocks remains the same.")
+                elif entered_price <= 0 or entered_stocks < 0:
+                    messagebox.showinfo("Warning", "Values were set to default due to invalid values.")
+                    self.build_frames()
+                    self.show_frame(Edit_Item)
+                else:
+                    current_dispenser.dispenser(entered_price, entered_stocks)
+                    messagebox.showinfo("Success", "Changes were saved.\n")
+
+
+
+
+
+
+                # if:
+
+
+                
 
                 
                 
@@ -245,14 +279,25 @@ class Edit_Item(tk.Frame):
         instructions = tk.Label(self, text=f"Save the changes to edit the values of {parent.candy_machine.item}.", font="Times 18 bold", fg="white", bg="#CE7777")
         instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
 
-        self.entry = tk.Entry(self, font="Times 25", justify="center")
-        self.entry.grid(row=2, column=0, columnspan=2)
+        price = tk.Label(self, text=f"Price of a {parent.candy_machine.item}", font="Times 18 bold", fg="white", bg="#CE7777")
+        price.grid(row=2, column=0, columnspan=2 ,sticky="esw")
 
+        self.price_entry = tk.Entry(self, font="Times 25", justify="center")
+        self.price_entry.insert(0, parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost())
+        self.price_entry.grid(row=3, column=0, columnspan=2)
 
-        save = tk.Button(self, text="Save", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_balance", "back"))
-        save.grid(row=3, column=0, columnspan=2, ipadx=15)
+        stocks = tk.Label(self, text=f"Number of available {parent.candy_machine.item}", font="Times 18 bold", fg="white", bg="#CE7777")
+        stocks.grid(row=4, column=0, columnspan=2 ,sticky="esw")
 
-        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.controller("edit_balance", "back"))
+        self.stocks_entry = tk.Entry(self, font="Times 25", justify="center")
+        self.stocks_entry.insert(0, parent.candy_machine.item_key[parent.candy_machine.item].get_count())
+        self.stocks_entry.grid(row=5, column=0, columnspan=2)
+
+        
+        save = tk.Button(self, text="Save Changes", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_item", "save"))
+        save.grid(row=6, column=0, columnspan=2, ipadx=15)
+
+        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.controller("edit_item", "back"))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
 
@@ -301,14 +346,6 @@ class Candy_Machine():
                          "gum": self.gum_dispenser,
                          "cookie": self.cookie_dispenser}
         
-        # Key mapping in admin menu
-        self.admin_key = {"1": {"item": "candy", "dispenser": self.candy_dispenser},
-                          "2": {"item": "chip", "dispenser": self.chip_dispenser},
-                          "3": {"item": "gum", "dispenser": self.gum_dispenser},
-                          "4": {"item": "cookie", "dispenser": self.cookie_dispenser},
-                          "V": "view_balance",
-                          "S": "set_balance",
-                          "Q": "back"}
 
     # Getter
     @property
@@ -402,9 +439,9 @@ class Candy_Machine():
         print("1 - Set Candy \n2 - Set Chips \n3 - Set Gum \n4 - Set Cookies\n\nV - View Balance \nS - Set Balance \nQ - Back")
         self.admin_choice = input("\nYour choice:  ")[0].upper() 
 
-
+    # Component (inner class) of Candy Machine
     class Cash_Register():
-        """ Component of Candy Machine, handles money """
+        """ Handles money """
 
         def __init__(self, cash_on_hand=500):
             self.cash_on_hand = cash_on_hand
@@ -444,9 +481,9 @@ class Candy_Machine():
             else:
                 raise TypeError("Amount In must be non negative integer")
 
-
+    # Component (inner class) of Candy Machine
     class Dispenser:
-        """ Component of Candy Machine, handles product """
+        """ Handles product """
         def __init__(self, cost=50, number_of_items=50):
             self.cost = cost
             self.number_of_items = number_of_items
