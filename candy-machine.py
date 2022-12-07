@@ -97,43 +97,69 @@ class App(tk.Tk):
 
 class Selection_Menu(tk.Frame):
     def __init__(self, parent, container):
-        super().__init__(container, bg="#FFCAC8")
+        super().__init__(container, bg="#FFD1D1")
 
         for number in range(7):
             self.grid_rowconfigure(number, weight=1)
         for number in range(2):
             self.grid_columnconfigure(number, weight=1)
 
-        title = tk.Label(self, text="My Candy Machine", font="Times 25 bold", bg="#C0EEE4")
+        title = tk.Label(self, text="My Candy Machine", font="Helvetica 25 bold", bg="#C0EEE4")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
 
-        intstructions = tk.Label(self, text="Press an item to purchase!", font="Times 18 bold", fg="black", bg="#FFD1D1")
+        intstructions = tk.Label(self, text="Press an item to purchase!", font="Helvetica 18 bold", fg="black", bg="#FFD1D1")
         intstructions.grid(row=1, column=0, columnspan=2, sticky="nesw")
 
-        candy = tk.Button(self, text="Candy", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="candy"))
+        candy = tk.Button(self, text="Candy", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="candy"))
         candy.grid(row=2, column=0, columnspan=2, sticky="nesw")
 
-        chip = tk.Button(self, text="Chip", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="chip"))
+        chip = tk.Button(self, text="Chip", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="chip"))
         chip.grid(row=3, column=0, columnspan=2, sticky="nesw")
 
-        gum = tk.Button(self, text="Gum", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="gum"))
+        gum = tk.Button(self, text="Gum", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="gum"))
         gum.grid(row=4, column=0, columnspan=2, sticky="nesw")
 
-        cookie = tk.Button(self, text="Cookie", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="cookie"))
+        cookie = tk.Button(self, text="Cookie", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="cookie"))
         cookie.grid(row=5, column=0, columnspan=2, sticky="nesw")
 
-        exit = tk.Button(self, text="Exit", font="Times 15", bg="#FFE3E1", command=parent.on_closing)
-        exit.grid(row=6, column=0, sticky="nesw", ipadx=15)
+        exit = tk.Button(self, text="Exit", font="Helvetica 15", bg="#F2E5E5", command=parent.on_closing)
+        exit.grid(row=6, column=0, sticky="nesw")
 
-        admin = tk.Button(self, text="Admin", font="Times 15", bg="#FFE3E1", command=lambda: parent.show_frame(parent.Admin_Menu))
+        admin = tk.Button(self, text="Admin", font="Helvetica 15", bg="#E8C4C4", command=lambda: parent.show_frame(parent.Admin_Menu))
         admin.grid(row=6, column=1, sticky="nesw")
 
 
 class Admin_Menu(tk.Frame):
     def __init__(self, parent, container):
-        super().__init__(container, bg="black")
+        super().__init__(container, bg="#CE7777")
 
-        label = tk.Label(self, text="Admin Menu", font=("Times", 30))
+        for number in range(8):
+            self.grid_rowconfigure(number, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        title = tk.Label(self, text="Admin Menu", font="Times 25 bold", fg="white", bg="#2B3A55")
+        title.grid(row=0, column=0, sticky="nesw")
+
+        intstructions = tk.Label(self, text="Press item to manage!", font="Times 18 bold", fg="white", bg="#CE7777")
+        intstructions.grid(row=1, column=0, sticky="nesw")
+
+        admin = tk.Button(self, text="Balance", font="Times 15", bg="#E8C4C4", command=lambda: parent.show_frame(parent.Admin_Menu))
+        admin.grid(row=2, column=0, sticky="nesw")
+
+        candy = tk.Button(self, text="Candy", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="candy"))
+        candy.grid(row=3, column=0, sticky="nesw")
+
+        chip = tk.Button(self, text="Chip", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="chip"))
+        chip.grid(row=4, column=0, sticky="nesw")
+
+        gum = tk.Button(self, text="Gum", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="gum"))
+        gum.grid(row=5, column=0, sticky="nesw")
+
+        cookie = tk.Button(self, text="Cookie", font="Times 15", bg="#E8C4C4", command=lambda: parent.controller("selection", item="cookie"))
+        cookie.grid(row=6, column=0, sticky="nesw")
+
+        exit = tk.Button(self, text="Back", font="Times 15", bg="#F2E5E5", command=lambda: parent.show_frame(parent.Selection_Menu))
+        exit.grid(row=7, column=0, sticky="nesw", ipadx=15)
 
 
 class Buy_Page(tk.Frame):
@@ -145,21 +171,21 @@ class Buy_Page(tk.Frame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
-        title = tk.Label(self, text="My Candy Machine", font="Times 25 bold", fg="black", bg="#C0EEE4")
+        title = tk.Label(self, text="My Candy Machine", font="Helvetica 25 bold", fg="black", bg="#C0EEE4")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
 
 
-        instructions = tk.Label(self, text=f"Insert ${parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost():,} to buy a {parent.candy_machine.item}:", font="Times 18 bold", fg="black", bg="#FFCAC8")
+        instructions = tk.Label(self, text=f"Insert ${parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost():,} to buy a {parent.candy_machine.item}:", font="Helvetica 18 bold", fg="black", bg="#FFCAC8")
         instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
 
-        self.entry = tk.Entry(self, font="Times 25 bold", justify="center")
+        self.entry = tk.Entry(self, font="Helvetica 25", justify="center")
         self.entry.grid(row=2, column=0, columnspan=2)
         self.entry.focus_set()
 
-        back = tk.Button(self, text="Back", font="Times 15", bg="#FFD1D1", command=lambda: parent.controller("buy", "back"))
+        back = tk.Button(self, text="Back", font="Helvetica 15", bg="#FFD1D1", command=lambda: parent.controller("buy", "back"))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
-        deposit = tk.Button(self, text="Insert", font="Times 15", bg="#C0EEE4", command=lambda: parent.controller("buy", "buy"))
+        deposit = tk.Button(self, text="Insert", font="Helvetica 15", bg="#C0EEE4", command=lambda: parent.controller("buy", "buy"))
         deposit.grid(row=3, column=0, columnspan=2, ipadx=15)
 
 
@@ -279,7 +305,6 @@ class Candy_Machine():
             return False
         try:
             new_deposit = int(new_deposit)
-
             if new_deposit > 0:
                 self.deposit += new_deposit
 
