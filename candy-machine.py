@@ -1,5 +1,8 @@
 # TODO
 # admin
+# create page for success
+# add warning when going back, give back deposited amount when going back
+# auto focus on entry
 # change price to always positive in the cli ver
 # comments
 # clean up code
@@ -10,13 +13,6 @@ from tkinter import messagebox
 
 
 def main():
-
-    """ Optional - uncomment then edit default values in registers and dispensers """
-    # candy_machine.cash_register.cash_register(cash_in=10_000)
-    # candy_machine.candy_dispenser.dispenser(set_cost=25, set_no_of_items=20)
-    # candy_machine.chip_dispenser.dispenser(set_cost=25, set_no_of_items=20)
-    # candy_machine.gum_dispenser.dispenser(set_cost=25, set_no_of_items=20)
-    # candy_machine.cookie_dispenser.dispenser(set_cost=25, set_no_of_items=20)
 
     app = App()
     app.mainloop()
@@ -31,7 +27,6 @@ class App(tk.Tk):
         
         self.candy_machine = Candy_Machine()
         self.candy_machine.chip_dispenser.dispenser(set_cost=5, set_no_of_items=1)
-        print(self.candy_machine.chip_dispenser)
         # print(self.candy_machine.chip_dispenser)
         self.candy_machine.item = "candy"
 
@@ -62,18 +57,30 @@ class App(tk.Tk):
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
-    def show_frame(self, cont, item=None):
-        if item:
-            self.candy_machine.item = item
-            self.build_frames()
+    def show_frame(self, cont):
         frame = self.frames[cont]
         frame.tkraise()
     
-    def connect_to_cm(self, coming_from):
-        if coming_from =="buy":
-            print(self.frames[Buy_Page].entry.get())
-            is_successful = self.candy_machine.sell_product(self.frames[Buy_Page].entry.get())
-            if is_successful:
+    def controller(self, coming_from, doing=None, item=None):
+        if coming_from == "selection":
+            if item:
+                self.candy_machine.item = item
+                self.build_frames()
+                self.show_frame(Buy_Page)
+
+
+        if coming_from == "buy":
+            if doing == "buy":
+                is_successful = self.candy_machine.sell_product(self.frames[Buy_Page].entry.get())
+                self.frames[Buy_Page].entry.delete(0, tk.END)
+                if self.candy_machine.item_key[self.candy_machine.item].get_count() <= 0:
+                    self.show_frame(Selection_Menu)
+                if is_successful:
+                    self.show_frame(Selection_Menu)
+            elif doing == "back":
+                if (self.candy_machine.deposit != 0):
+                    messagebox.showinfo(title="Return", message=f"Here is the ${self.candy_machine.deposit:,.2f} you deposited.")
+                    self.candy_machine.deposit = 0
                 self.show_frame(Selection_Menu)
 
     # Reprompt when closing
@@ -100,16 +107,16 @@ class Selection_Menu(tk.Frame):
         intstructions = tk.Label(self, text="Press an item to purchase!", font="Times 18 bold", fg="black", bg="#FFD1D1")
         intstructions.grid(row=1, column=0, columnspan=2, sticky="nesw")
 
-        candy = tk.Button(self, text="Candy", font="Times 15", bg="#FFE3E1", command=lambda: parent.show_frame(parent.Buy_Page, "candy"))
+        candy = tk.Button(self, text="Candy", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="candy"))
         candy.grid(row=2, column=0, columnspan=2, sticky="nesw")
 
-        chip = tk.Button(self, text="Chip", font="Times 15", bg="#FFE3E1", command=lambda: parent.show_frame(parent.Buy_Page, "chip"))
+        chip = tk.Button(self, text="Chip", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="chip"))
         chip.grid(row=3, column=0, columnspan=2, sticky="nesw")
 
-        gum = tk.Button(self, text="Gum", font="Times 15", bg="#FFE3E1", command=lambda: parent.show_frame(parent.Buy_Page, "gum"))
+        gum = tk.Button(self, text="Gum", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="gum"))
         gum.grid(row=4, column=0, columnspan=2, sticky="nesw")
 
-        cookie = tk.Button(self, text="Cookie", font="Times 15", bg="#FFE3E1", command=lambda: parent.show_frame(parent.Buy_Page, "cookie"))
+        cookie = tk.Button(self, text="Cookie", font="Times 15", bg="#FFE3E1", command=lambda: parent.controller("selection", item="cookie"))
         cookie.grid(row=5, column=0, columnspan=2, sticky="nesw")
 
         exit = tk.Button(self, text="Exit", font="Times 15", bg="#FFE3E1", command=parent.on_closing)
@@ -144,11 +151,12 @@ class Buy_Page(tk.Frame):
 
         self.entry = tk.Entry(self, font="Times 25 bold", justify="center")
         self.entry.grid(row=2, column=0, columnspan=2)
+        self.entry.focus_set()
 
-        back = tk.Button(self, text="Back", font="Times 15", bg="#FFD1D1", command=lambda: parent.show_frame(parent.Selection_Menu))
+        back = tk.Button(self, text="Back", font="Times 15", bg="#FFD1D1", command=lambda: parent.controller("buy", "back"))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
-        deposit = tk.Button(self, text="Insert", font="Times 15", bg="#C0EEE4", command=lambda: parent.connect_to_cm("buy"))
+        deposit = tk.Button(self, text="Insert", font="Times 15", bg="#C0EEE4", command=lambda: parent.controller("buy", "buy"))
         deposit.grid(row=3, column=0, columnspan=2, ipadx=15)
 
 
@@ -181,17 +189,18 @@ class Buy_Page(tk.Frame):
 
 
 
-class Candy_Machine:
+class Candy_Machine():
 
     def __init__(self):
+        # super().__init__()
 
         """ Initalize the components of candy machine """
 
-        self.cash_register = Cash_Register()
-        self.candy_dispenser = Dispenser()
-        self.chip_dispenser = Dispenser()
-        self.gum_dispenser = Dispenser()
-        self.cookie_dispenser = Dispenser()
+        self.cash_register = self.Cash_Register()
+        self.candy_dispenser = self.Dispenser()
+        self.chip_dispenser = self.Dispenser()
+        self.gum_dispenser = self.Dispenser()
+        self.cookie_dispenser = self.Dispenser()
 
         self.deposit = 0
 
@@ -200,8 +209,7 @@ class Candy_Machine:
                          "chip": self.chip_dispenser,
                          "gum": self.gum_dispenser,
                          "cookie": self.cookie_dispenser,
-                         "A": "admin",
-                         "Q": "exit"}
+                         "A": "admin"}
 
         # Key mapping in admin menu
         self.admin_key = {"1": {"item": "candy", "dispenser": self.candy_dispenser},
@@ -240,9 +248,11 @@ class Candy_Machine:
 
     def program():
         """ Start the program"""
-        
+        # app = App()
+        # app.mainloop()
+
     def sell_product(self, new_deposit):
-        """ Sell the item selected by the customer """
+        """ Sell the item selected by the customer, return true if purchase is successful """
         # Ensure that the chosen item is not out of stock
         
         if self.item_key[self.item].get_count() <= 0:
@@ -275,9 +285,9 @@ class Candy_Machine:
 
         # if there is change, return it
         if  self.deposit != self.item_key[self.item].get_product_cost():
-            messagebox.showinfo("Successful", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!\n\nHere also is you change of ${self.deposit - self.item_key[self.item].get_product_cost():,.2f}")
+            messagebox.showinfo("Success", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!\n\nHere also is your change of ${self.deposit - self.item_key[self.item].get_product_cost():,.2f}")
         else:
-            messagebox.showinfo("Successful", f"Successfully purchased a {self.item}!\nHere is you {self.item}! Enjoy!")
+            messagebox.showinfo("Success", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!")
         self.deposit = 0
         return True
 
@@ -293,105 +303,105 @@ class Candy_Machine:
         self.admin_choice = input("\nYour choice:  ")[0].upper() 
 
 
-class Cash_Register():
-    """ Component of Candy Machine, handles money """
+    class Cash_Register():
+        """ Component of Candy Machine, handles money """
 
-    def __init__(self, cash_on_hand=500):
-        self.cash_on_hand = cash_on_hand
+        def __init__(self, cash_on_hand=500):
+            self.cash_on_hand = cash_on_hand
 
-    # Getter
-    @property
-    def cash_on_hand(self):
-        return self._cash_on_hand
+        # Getter
+        @property
+        def cash_on_hand(self):
+            return self._cash_on_hand
 
-    # Setter
-    @cash_on_hand.setter
-    def cash_on_hand(self, cash_on_hand):
-        if isinstance(cash_on_hand, int):
-            if cash_on_hand < 0:
-                self._cash_on_hand = 500
+        # Setter
+        @cash_on_hand.setter
+        def cash_on_hand(self, cash_on_hand):
+            if isinstance(cash_on_hand, int):
+                if cash_on_hand < 0:
+                    self._cash_on_hand = 500
+                else:
+                    self._cash_on_hand = cash_on_hand
             else:
-                self._cash_on_hand = cash_on_hand
-        else:
-            raise TypeError("Cash on Hand must be an integer")
+                raise TypeError("Cash on Hand must be an integer")
 
-    def __str__(self):
-        return f"Cash on hand is ${self.cash_on_hand:,.2f}"
+        def __str__(self):
+            return f"Cash on hand is ${self.cash_on_hand:,.2f}"
 
-    def cash_register(self, cash_in=500):
-        """ Let candy machine modify cash on hand """
-        self.cash_on_hand = cash_in
+        def cash_register(self, cash_in=500):
+            """ Let candy machine modify cash on hand """
+            self.cash_on_hand = cash_in
 
-    def current_balance(self):
-        """ Shows the current amount in the cash register """
-        return self.cash_on_hand
+        def current_balance(self):
+            """ Shows the current amount in the cash register """
+            return self.cash_on_hand
 
-    def accept_amount(self, amount_in):
-        """ Accepts the amount entered by the customer """
-        if isinstance(amount_in, int) and amount_in > 0:
-            self.cash_on_hand += amount_in
-        
-        else:
-            raise TypeError("Amount In must be non negative integer")
-
-
-class Dispenser:
-    """ Component of Candy Machine, handles product """
-    def __init__(self, cost=50, number_of_items=50):
-        self.cost = cost
-        self.number_of_items = number_of_items
-
-    # Getter
-    @property
-    def cost(self):
-        return self._cost
-
-    # Setter
-    @cost.setter
-    def cost(self, cost):
-        if isinstance(cost, int):
-            if cost <= 0:
-                self._cost = 50
+        def accept_amount(self, amount_in):
+            """ Accepts the amount entered by the customer """
+            if isinstance(amount_in, int) and amount_in > 0:
+                self.cash_on_hand += amount_in
+            
             else:
-                self._cost = cost 
-        else:
-            raise TypeError("Cost must be an integer")
+                raise TypeError("Amount In must be non negative integer")
 
-    # Getter
-    @property
-    def number_of_items(self):
-        return self._number_of_items
 
-    # Setter
-    @number_of_items.setter
-    def number_of_items(self, number_of_items):
-        if isinstance(number_of_items, int):
-            if number_of_items < 0:
-                self._number_of_items = 50 
+    class Dispenser:
+        """ Component of Candy Machine, handles product """
+        def __init__(self, cost=50, number_of_items=50):
+            self.cost = cost
+            self.number_of_items = number_of_items
+
+        # Getter
+        @property
+        def cost(self):
+            return self._cost
+
+        # Setter
+        @cost.setter
+        def cost(self, cost):
+            if isinstance(cost, int):
+                if cost <= 0:
+                    self._cost = 50
+                else:
+                    self._cost = cost 
             else:
-                self._number_of_items = number_of_items 
-        else:
-            raise TypeError("Number of Items must be an integer")
+                raise TypeError("Cost must be an integer")
 
-    def __str__(self):
-        return f"Cost is ${self.cost:,.2f} and Number of Items is {self.number_of_items}"
+        # Getter
+        @property
+        def number_of_items(self):
+            return self._number_of_items
 
-    def dispenser(self, set_cost=50, set_no_of_items=50):
-        """ Let candy machine modify number of items and cost of item """
-        self.cost = set_cost
-        self.number_of_items = set_no_of_items
+        # Setter
+        @number_of_items.setter
+        def number_of_items(self, number_of_items):
+            if isinstance(number_of_items, int):
+                if number_of_items < 0:
+                    self._number_of_items = 50 
+                else:
+                    self._number_of_items = number_of_items 
+            else:
+                raise TypeError("Number of Items must be an integer")
 
-    def get_count(self):
-        """ returns the number of items of a particular product """
-        return self.number_of_items
+        def __str__(self):
+            return f"Cost is ${self.cost:,.2f} and Number of Items is {self.number_of_items}"
 
-    def get_product_cost(self):
-        """ returns the cost of a product """
-        return self.cost
+        def dispenser(self, set_cost=50, set_no_of_items=50):
+            """ Let candy machine modify number of items and cost of item """
+            self.cost = set_cost
+            self.number_of_items = set_no_of_items
 
-    def makeSale(self):
-        """ Product sold, reduce number of items by 1 """
-        self.number_of_items -= 1
+        def get_count(self):
+            """ returns the number of items of a particular product """
+            return self.number_of_items
+
+        def get_product_cost(self):
+            """ returns the cost of a product """
+            return self.cost
+
+        def makeSale(self):
+            """ Product sold, reduce number of items by 1 """
+            self.number_of_items -= 1
 
 
 if __name__ == "__main__":
