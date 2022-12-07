@@ -76,10 +76,17 @@ class App(tk.Tk):
                     self.show_frame(Selection_Menu)
 
             elif doing == "back":
-                if (self.candy_machine.deposit != 0):
-                    messagebox.showinfo(title="Return", message=f"Here is the ${self.candy_machine.deposit:,.2f} you deposited.")
-                    self.candy_machine.deposit = 0
-                self.show_frame(Selection_Menu)
+                if self.candy_machine.deposit != 0:
+                    if messagebox.askokcancel(title="Cancel?", message=f"Are you sure you want to cancel the purchase of {self.candy_machine.item}?"):
+                        messagebox.showinfo(title="Return", message=f"Here is the ${self.candy_machine.deposit:,.2f} you deposited.")
+                        self.candy_machine.deposit = 0
+                        self.show_frame(Selection_Menu)
+
+                else:
+                    self.show_frame(Selection_Menu)
+
+
+        
 
     # Reprompt when closing
     def on_closing(self):
