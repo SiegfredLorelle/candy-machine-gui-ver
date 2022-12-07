@@ -1,8 +1,3 @@
-# TODO
-# TEST
-# comments
-# clean up code
-
 import tkinter as tk
 from tkinter import messagebox
 
