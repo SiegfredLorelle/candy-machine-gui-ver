@@ -1,9 +1,5 @@
 # TODO
 # admin
-# create page for success
-# add warning when going back, give back deposited amount when going back
-# auto focus on entry
-# change price to always positive in the cli ver
 # comments
 # clean up code
 
@@ -65,18 +61,20 @@ class App(tk.Tk):
         if coming_from == "selection":
             if item:
                 self.candy_machine.item = item
+                if self.candy_machine.item_key[self.candy_machine.item].get_count() <= 0:
+                    return messagebox.showerror("Error", f"Sorry {self.candy_machine.item} is out of stock.")
+
                 self.build_frames()
                 self.show_frame(Buy_Page)
-
 
         if coming_from == "buy":
             if doing == "buy":
                 is_successful = self.candy_machine.sell_product(self.frames[Buy_Page].entry.get())
                 self.frames[Buy_Page].entry.delete(0, tk.END)
-                if self.candy_machine.item_key[self.candy_machine.item].get_count() <= 0:
-                    self.show_frame(Selection_Menu)
+
                 if is_successful:
                     self.show_frame(Selection_Menu)
+
             elif doing == "back":
                 if (self.candy_machine.deposit != 0):
                     messagebox.showinfo(title="Return", message=f"Here is the ${self.candy_machine.deposit:,.2f} you deposited.")
