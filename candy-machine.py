@@ -71,6 +71,7 @@ class App(tk.Tk):
                 self.frames[Buy_Page].buy_entry.delete(0, tk.END)
 
                 if is_successful:
+                    self.build_frames()
                     self.show_frame(Selection_Menu)
 
             elif doing == "back":
@@ -92,13 +93,30 @@ class App(tk.Tk):
                 self.show_frame(Edit_Item)
 
         elif coming_from == "edit_balance":
-            self.show_frame(Admin_Menu)
+            if doing == "save":
+                try:
+                    entered_balance = int(self.frames[Edit_Balance].balance_entry.get())
+
+                except (TypeError, ValueError):
+                    messagebox.showerror("Error", "Balance in the candy machine must be a positive integer.")
+                    self.build_frames()
+                    self.show_frame(Edit_Balance)
+                    return
+                if self.candy_machine.cash_register.current_balance() == entered_balance:
+                    messagebox.showerror("Error", "Balance in the candy machine remains the same.")
+
+                elif entered_balance < 0:
+                    messagebox.showinfo("Warning", "Balance in the machine were set to default due to invalid input.")
+
+                else:
+                    self.candy_machine.cash_register.cash_register(entered_balance)
+                    messagebox.showinfo("success", f"There are ${self.candy_machine.cash_register.current_balance():,.2f} in the candy machine.")
+
+                self.build_frames()
+                self.show_frame(Edit_Balance)
 
         elif coming_from == "edit_item":
-            if doing == "back":
-                self.show_frame(Admin_Menu)
-            
-            elif doing == "save":
+            if doing == "save":
                 current_dispenser = self.candy_machine.item_key[self.candy_machine.item]
 
                 try:
@@ -106,34 +124,28 @@ class App(tk.Tk):
                     entered_price = int(self.frames[Edit_Item].price_entry.get())
 
                 except (TypeError, ValueError):
-                    return messagebox.showerror("Error", "Price and number of stocks must be a positive integer.")
+                    messagebox.showerror("Error", "Price and number of stocks must be a positive integer.")
+                    self.build_frames()
+                    self.show_frame(Edit_Item)
+                    return
 
                 if current_dispenser.get_count() == entered_stocks and current_dispenser.get_product_cost() == entered_price:
                     messagebox.showerror("Error", "Price and number of stocks remains the same.")
                 elif entered_price <= 0 or entered_stocks < 0:
                     messagebox.showinfo("Warning", "Values were set to default due to invalid values.")
-                    self.build_frames()
-                    self.show_frame(Edit_Item)
                 else:
                     current_dispenser.dispenser(entered_price, entered_stocks)
                     messagebox.showinfo("Success", "Changes were saved.\n")
 
+                self.build_frames()
+                self.show_frame(Edit_Item)
 
 
 
 
 
-                # if:
 
 
-                
-
-                
-                
-        
-
-
-        
 
     # Reprompt when closing
     def on_closing(self):
@@ -252,18 +264,23 @@ class Edit_Balance(tk.Frame):
         title = tk.Label(self, text="Admin Menu", font="Times 25 bold", fg="white", bg="#2B3A55")
         title.grid(row=0, column=0, columnspan=2, sticky="nesw")
 
-        instructions = tk.Label(self, text=f"Save the changes to edit the values of {parent.candy_machine.item}.", font="Times 18 bold", fg="white", bg="#CE7777")
-        instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
+        instructions = tk.Label(self, text=f"Save changes to set a new balance in the candy machine.", font="Times 18 bold", fg="white", bg="#CE7777")
+        instructions.grid(row=2, column=0, columnspan=2,sticky="nesw")
 
-        self.entry = tk.Entry(self, font="Times 25", justify="center")
-        self.entry.grid(row=2, column=0, columnspan=2)
+        price = tk.Label(self, text="Amount of cash in the candy machine:", font="Times 18 bold", fg="white", bg="#CE7777")
+        price.grid(row=3, column=0, columnspan=2 ,sticky="esw")
 
+        self.balance_entry = tk.Entry(self, font="Times 25", justify="center")
+        # print(parent.candy_machine.cash_register.current_balance())
+        self.balance_entry.insert(0, parent.candy_machine.cash_register.current_balance())
+        self.balance_entry.grid(row=4, column=0, columnspan=2)
 
-        save = tk.Button(self, text="Save", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_balance", "back"))
-        save.grid(row=3, column=0, columnspan=2, ipadx=15)
+        save = tk.Button(self, text="Save Changes", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_balance", "save"))
+        save.grid(row=5, column=0, columnspan=2, ipadx=15)
 
-        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.controller("edit_balance", "back"))
+        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
+
 
 class Edit_Item(tk.Frame):
     def __init__(self, parent, container):
@@ -279,25 +296,24 @@ class Edit_Item(tk.Frame):
         instructions = tk.Label(self, text=f"Save the changes to edit the values of {parent.candy_machine.item}.", font="Times 18 bold", fg="white", bg="#CE7777")
         instructions.grid(row=1, column=0, columnspan=2,sticky="nesw")
 
-        price = tk.Label(self, text=f"Price of a {parent.candy_machine.item}", font="Times 18 bold", fg="white", bg="#CE7777")
+        price = tk.Label(self, text=f"Price of a {parent.candy_machine.item}:", font="Times 18 bold", fg="white", bg="#CE7777")
         price.grid(row=2, column=0, columnspan=2 ,sticky="esw")
 
         self.price_entry = tk.Entry(self, font="Times 25", justify="center")
         self.price_entry.insert(0, parent.candy_machine.item_key[parent.candy_machine.item].get_product_cost())
         self.price_entry.grid(row=3, column=0, columnspan=2)
 
-        stocks = tk.Label(self, text=f"Number of available {parent.candy_machine.item}", font="Times 18 bold", fg="white", bg="#CE7777")
+        stocks = tk.Label(self, text=f"Number of available {parent.candy_machine.item}:", font="Times 18 bold", fg="white", bg="#CE7777")
         stocks.grid(row=4, column=0, columnspan=2 ,sticky="esw")
 
         self.stocks_entry = tk.Entry(self, font="Times 25", justify="center")
         self.stocks_entry.insert(0, parent.candy_machine.item_key[parent.candy_machine.item].get_count())
         self.stocks_entry.grid(row=5, column=0, columnspan=2)
 
-        
         save = tk.Button(self, text="Save Changes", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_item", "save"))
         save.grid(row=6, column=0, columnspan=2, ipadx=15)
 
-        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.controller("edit_item", "back"))
+        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
 
@@ -328,7 +344,6 @@ class Edit_Item(tk.Frame):
 class Candy_Machine():
 
     def __init__(self):
-        # super().__init__()
 
         """ Initalize the components of candy machine """
 
@@ -418,7 +433,9 @@ class Candy_Machine():
         self.item_key[self.item].makeSale()
 
         # Register takes in the payment (not total deposit, just the price of item)
+        # print(self.item_key[self.item].get_product_cost())
         self.cash_register.accept_amount(self.item_key[self.item].get_product_cost())
+        # print(self.cash_register.current_balance())
 
         # if there is change, return it
         if  self.deposit != self.item_key[self.item].get_product_cost():
