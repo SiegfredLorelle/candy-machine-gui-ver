@@ -281,7 +281,7 @@ class Edit_Balance(tk.Frame):
         save = tk.Button(self, text="Save Changes", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_balance", "save"))
         save.grid(row=5, column=0, columnspan=2, ipadx=15)
 
-        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
+        back = tk.Button(self, text="Back", font="Times 15", fg="white", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
 
@@ -316,7 +316,7 @@ class Edit_Item(tk.Frame):
         save = tk.Button(self, text="Save Changes", font="Times 15", fg="white", bg="#2B3A55", command=lambda: parent.controller("edit_item", "save"))
         save.grid(row=6, column=0, columnspan=2, ipadx=15)
 
-        back = tk.Button(self, text="Back", font="Times 15", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
+        back = tk.Button(self, text="Back", font="Times 15", fg="white", bg="#CE7777", command=lambda: parent.show_frame(Admin_Menu))
         back.grid(row=8, column=0, sticky="w", ipadx=15, padx=20, pady=20)
 
 
