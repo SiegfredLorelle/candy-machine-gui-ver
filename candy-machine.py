@@ -3,7 +3,6 @@
 # comments
 # clean up code
 
-
 import tkinter as tk
 from tkinter import messagebox
 
@@ -81,7 +80,6 @@ class App(tk.Tk):
                         messagebox.showinfo(title="Return", message=f"Here is the ${self.candy_machine.deposit:,.2f} you deposited.")
                         self.candy_machine.deposit = 0
                         self.show_frame(Selection_Menu)
-
                 else:
                     self.show_frame(Selection_Menu)
 
@@ -251,6 +249,22 @@ class Candy_Machine():
         else:
             self._admin_choice = self.admin_key[admin_choice]
 
+
+
+    # Getter
+    @property
+    def deposit(self):
+        return self._deposit
+
+    # Setter
+    @deposit.setter
+    def deposit(self, deposit):
+        if deposit < 0:
+            raise ValueError("Deposit must be positive.")
+        else:
+            self._deposit = deposit
+
+
     def program():
         """ Start the program"""
         # app = App()
@@ -268,10 +282,6 @@ class Candy_Machine():
 
             if new_deposit > 0:
                 self.deposit += new_deposit
-
-            else:
-                messagebox.showerror("Error", f"Inserted cash must be positive.")
-                return False
 
         except (ValueError, TypeError):
             messagebox.showerror("Error", f"Inserted cash must be positive number.")
