@@ -1,5 +1,5 @@
 # TODO
-# balance
+# TEST
 # comments
 # clean up code
 
@@ -17,13 +17,12 @@ def main():
 
 
 class App(tk.Tk):
+    """ GUI app """
     def __init__(self):
         super().__init__()
         
+        # Create a candy machine
         self.candy_machine = Candy_Machine()
-        self.candy_machine.chip_dispenser.dispenser(set_cost=5, set_no_of_items=1)
-        # print(self.candy_machine.chip_dispenser)
-        self.candy_machine.item = "candy"
 
         self.title('My Candy Machine')
         self.geometry('1080x720')
@@ -84,13 +83,17 @@ class App(tk.Tk):
                     self.show_frame(Selection_Menu)
 
         elif coming_from == "admin":
+            self.build_frames()
+
             if item == "balance":
+                self.frames[Edit_Balance].balance_entry.focus_set()
                 self.show_frame(Edit_Balance)
+
             else:
                 self.candy_machine.item = item
-                self.build_frames()
-
+                self.frames[Edit_Item].price_entry.focus_set()
                 self.show_frame(Edit_Item)
+
 
         elif coming_from == "edit_balance":
             if doing == "save":
@@ -344,87 +347,70 @@ class Edit_Item(tk.Frame):
 class Candy_Machine():
 
     def __init__(self):
-
         """ Initalize the components of candy machine """
-
         self.cash_register = self.Cash_Register()
         self.candy_dispenser = self.Dispenser()
         self.chip_dispenser = self.Dispenser()
         self.gum_dispenser = self.Dispenser()
         self.cookie_dispenser = self.Dispenser()
 
-        self.deposit = 0
-
-        # Key mapping in selection menu
+        # Key mapping to access each items' dispenser
         self.item_key = {"candy": self.candy_dispenser,
                          "chip": self.chip_dispenser,
                          "gum": self.gum_dispenser,
                          "cookie": self.cookie_dispenser}
-        
 
-    # Getter
+        # Variables accessed/modified app
+        self.deposit = 0
+        self.item = "candy"
+
+    # Item Getter
     @property
     def item(self):
         return self._item
 
-    # Setter
+    # Item Setter
     @item.setter
     def item(self, item):
+        # Ensures the item maps to the key
         if not item or item not in self.item_key:
             return messagebox.showerror("Error", "An error has occured.\nSelected item is invalid.")
         else:
             self._item = item
 
-    # Getter
-    @property
-    def admin_choice(self):
-        return self._admin_choice
-
-    # Setter
-    @admin_choice.setter
-    def admin_choice(self, admin_choice):
-        if not admin_choice or admin_choice not in self.admin_key:
-            raise ValueError("Choice is not in admin key")
-        else:
-            self._admin_choice = self.admin_key[admin_choice]
-
-
-
-    # Getter
+    # Deposit Getter
     @property
     def deposit(self):
         return self._deposit
 
-    # Setter
+    # Desposit Setter
     @deposit.setter
     def deposit(self, deposit):
+        # Ensures deposit is a non negative integer
         if deposit < 0:
             raise ValueError("Deposit must be positive.")
         else:
             self._deposit = deposit
 
 
-    def program():
-        """ Start the program"""
-        # app = App()
-        # app.mainloop()
-
     def sell_product(self, new_deposit):
         """ Sell the item selected by the customer, return true if purchase is successful """
+
         # Ensure that the chosen item is not out of stock
         if self.item_key[self.item].get_count() <= 0:
             messagebox.showerror("Error", f"Sorry {self.item} is out of stock.")
             return False
+        # Ensures the inserted deposit is an non negative integer
         try:
             new_deposit = int(new_deposit)
             if new_deposit > 0:
                 self.deposit += new_deposit
-
+        # Show error message if inserted deposit is invalid
         except (ValueError, TypeError):
             messagebox.showerror("Error", f"Inserted cash must be positive number.")
             return False
 
-        # Asks for more if deposit is not enough
+        # Asks for more deposit if deposit is not enough to buy the item
         if self.deposit < self.item_key[self.item].get_product_cost():
             messagebox.showinfo("Insufficient Deposit", f"Deposit ${self.item_key[self.item].get_product_cost() - self.deposit} more.")
             return False
@@ -433,28 +419,20 @@ class Candy_Machine():
         self.item_key[self.item].makeSale()
 
         # Register takes in the payment (not total deposit, just the price of item)
-        # print(self.item_key[self.item].get_product_cost())
         self.cash_register.accept_amount(self.item_key[self.item].get_product_cost())
-        # print(self.cash_register.current_balance())
 
-        # if there is change, return it
+        # Inform the user about the successful transcation
+        # If there is change, return it
         if  self.deposit != self.item_key[self.item].get_product_cost():
             messagebox.showinfo("Success", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!\n\nHere also is your change of ${self.deposit - self.item_key[self.item].get_product_cost():,.2f}")
         else:
             messagebox.showinfo("Success", f"Successfully purchased a {self.item}!\nHere is your {self.item}! Enjoy!")
+        
+        # Reset the deposit
         self.deposit = 0
         return True
 
 
-    def show_selection(self):
-        """ displays the main menu, allow users to select an item to buy """
-
-
-    def show_admin_menu(self):
-        """ Allows owner to view and set balance in register, and set price and number of items """
-        print("\nAdmin Settings: Enter corresponding value")
-        print("1 - Set Candy \n2 - Set Chips \n3 - Set Gum \n4 - Set Cookies\n\nV - View Balance \nS - Set Balance \nQ - Back")
-        self.admin_choice = input("\nYour choice:  ")[0].upper() 
 
     # Component (inner class) of Candy Machine
     class Cash_Register():
@@ -463,15 +441,17 @@ class Candy_Machine():
         def __init__(self, cash_on_hand=500):
             self.cash_on_hand = cash_on_hand
 
-        # Getter
+        # Cash Getter
         @property
         def cash_on_hand(self):
             return self._cash_on_hand
 
-        # Setter
+        # Cash Setter
         @cash_on_hand.setter
         def cash_on_hand(self, cash_on_hand):
+            # Ensure cash is an integer
             if isinstance(cash_on_hand, int):
+                # Change cash to default value if less than 0 (instructed in pdf)
                 if cash_on_hand < 0:
                     self._cash_on_hand = 500
                 else:
@@ -479,6 +459,7 @@ class Candy_Machine():
             else:
                 raise TypeError("Cash on Hand must be an integer")
 
+        # Prints out the cash by calling register itself
         def __str__(self):
             return f"Cash on hand is ${self.cash_on_hand:,.2f}"
 
@@ -492,9 +473,10 @@ class Candy_Machine():
 
         def accept_amount(self, amount_in):
             """ Accepts the amount entered by the customer """
+            # Ensures the amount paid by the customer is valid
             if isinstance(amount_in, int) and amount_in > 0:
+                # Add the payment of customer to current cash on hand
                 self.cash_on_hand += amount_in
-            
             else:
                 raise TypeError("Amount In must be non negative integer")
 
@@ -505,15 +487,17 @@ class Candy_Machine():
             self.cost = cost
             self.number_of_items = number_of_items
 
-        # Getter
+        # Cost Getter
         @property
         def cost(self):
             return self._cost
 
-        # Setter
+        # Cost Setter
         @cost.setter
         def cost(self, cost):
+            # Ensures cost of an item is an integer
             if isinstance(cost, int):
+                # If cost of an item is not positive, set to default 50 (instructed in pdf)
                 if cost <= 0:
                     self._cost = 50
                 else:
@@ -529,7 +513,9 @@ class Candy_Machine():
         # Setter
         @number_of_items.setter
         def number_of_items(self, number_of_items):
+            # Ensures the number if items in stock is an integer
             if isinstance(number_of_items, int):
+                # If the number of items in stock is negative, set to default 50 (instructed in pdf)
                 if number_of_items < 0:
                     self._number_of_items = 50 
                 else:
@@ -537,24 +523,25 @@ class Candy_Machine():
             else:
                 raise TypeError("Number of Items must be an integer")
 
+        # Prints out the cost and number of items by calling dispenser itself
         def __str__(self):
             return f"Cost is ${self.cost:,.2f} and Number of Items is {self.number_of_items}"
 
         def dispenser(self, set_cost=50, set_no_of_items=50):
-            """ Let candy machine modify number of items and cost of item """
+            """ Let candy machine modify number of items and cost of an item """
             self.cost = set_cost
             self.number_of_items = set_no_of_items
 
         def get_count(self):
-            """ returns the number of items of a particular product """
+            """ returns the number of items in stock if an an item """
             return self.number_of_items
 
         def get_product_cost(self):
-            """ returns the cost of a product """
+            """ returns the cost of an item """
             return self.cost
 
         def makeSale(self):
-            """ Product sold, reduce number of items by 1 """
+            """ Product sold, so reduce number of items in stock by 1 """
             self.number_of_items -= 1
 
 
